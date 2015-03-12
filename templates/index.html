@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+
+    <!-- Some style to easily hide a block -->
+    <style type="text/css">
+        .hide {display:none;}
+    </style>
+
+    <!--
+        The JS lib allowing to speak WAMP.
+
+        Here I'm assuming we are using a browser with Websocket support.
+        It's possible to fall back to flash or long poll, but that
+        would require additional dependencies.
+    -->
+    <script src="https://autobahn.s3.amazonaws.com/autobahnjs/latest/autobahn.min.jgz"
+           type="text/javascript"></script>
+
+
+    <!-- All our client code, inlined for easy reading -->
+    <script type="text/javascript">
+
+        function getId(obj) {
+            return "todo_" + obj.id;
+        }
+
+        function created_or_updated(payload) {
+            var todos = document.getElementById("todos"),
+                elId = getId(payload),
+                el = document.getElementById(elId);
+            if (el === null) {
+                el = document.createElement('li');
+                el.id = elId;
+                todos.appendChild(el);
+            }
+            el.innerHTML = payload.message;
+        }
+
+        function deleted(payload) {
+            var todos = document.getElementById("todos"),
+                elId = getId(payload);
+                el = document.getElementById(elId);
+            if (el !== null) {
+                todos.removeChild(el);
+            }
+        }
+
+      /* When the page is loaded, run our code. */
+      window.addEventListener("load", function(){
+
+        /* Connection configuration to our WAMP router */
+        var connection = new autobahn.Connection({
+           url: 'ws://127.0.0.1:8080/ws',
+           realm: 'realm1'
+        });
+
+        /* When the connection is opened, execute this code */
+        connection.onopen = function(session) {
+
+          var clients = document.getElementById("clients");
+
+
+          session.subscribe('updates', function(args){
+                var action = args[0],
+                    payload = args[1]
+
+                switch (action) {
+                    case 'created':
+                    case 'updated':
+                        created_or_updated(payload);
+                        break;
+                    case 'deleted':
+                        deleted(payload);
+                    default:
+                        console.log('wtf');
+                        console.log('action: ' + action);
+                        console.log('payload: ' + payload);
+
+                }
+          });
+
+        };
+
+        // Open the WAMP connection with the router.
+        connection.open();
+
+      });
+    </script>
+
+    <title>Todos</title>
+</head>
+<body>
+    <h1> Todos </h1>
+    <ul id="todos"></ul>
+</body>
+
+</html>

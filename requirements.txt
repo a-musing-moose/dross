@@ -1,0 +1,3 @@
+-f /home/mossj/.pip/wheelhouse
+Django==1.7.6
+crossbar==0.10.2
